@@ -1,0 +1,181 @@
+# ===========================
+# Android 项目通用忽略规则
+# ===========================
+
+# ============ Gradle ============
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# ============ Android Studio / IntelliJ IDEA ============
+.idea/
+*.iml
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/libraries
+.idea/caches
+.idea/modules.xml
+.idea/.name
+.idea/compiler.xml
+.idea/jarRepositories.xml
+.idea/misc.xml
+.idea/vcs.xml
+
+# Android Studio 3.x 生成的文件
+.idea/codeStyles/
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+
+# ============ 本地配置 ============
+local.properties
+*.keystore
+*.jks
+signing.properties
+
+# ============ Android 编译产物 ============
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+release/
+
+# ============ NDK / CMake ============
+.externalNativeBuild/
+.cxx/
+cmake-build-*/
+obj/
+libs/
+
+# CMake 缓存
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# ============ Android Profiler ============
+captures/
+
+# ============ 日志文件 ============
+*.log
+
+# ============ macOS ============
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ============ Windows ============
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ============ Linux ============
+*~
+.directory
+
+# ============ 版本控制 ============
+.svn/
+.hg/
+.bzr/
+
+# ============ 临时文件 ============
+*.swp
+*.swo
+*.tmp
+*.bak
+*.orig
+
+# ============ 项目特定 ============
+
+# MNN 源码仓库（已构建完成，可选忽略）
+MNN_Repo/
+
+# 构建脚本输出
+*.ps1.log
+
+# 模型文件（太大，不建议提交）
+*.mnn
+*.onnx
+*.bin
+
+# 用户自定义配置
+app/src/main/assets/models/
+
+# ============ 测试相关 ============
+*.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+
+# ============ 依赖管理 ============
+**/node_modules/
+**/bower_components/
+
+# ============ 其他 ============
+# 忽略 VSCode 配置（如果团队使用不同 IDE）
+.vscode/
+
+# 忽略 JetBrains 全局配置
+.idea/**/workspace.xml
+.idea/**/usage.statistics.xml
+.idea/**/shelf/
+
+# 忽略自动生成的 APK 列表
+app/*.apk
+app/*.aab
+app/*.ap_
+app/release/
+app/debug/
+
+# ============ 保留的文件 ============
+# 确保以下文件不被忽略
+!gradle-wrapper.jar
+!*.md
+!*.gradle
+!*.kt
+!*.java
+!*.xml
+!*.cpp
+!*.h
+!*.hpp
+
+# ============ Android Test ============
+/androidTest/
+/test/
+*.test
+
+# ============ Lint ============
+lint/
+lint-results.html
+lint-results.xml
+
+# ============ 签名文件（敏感信息）============
+keystore.properties
+release.properties
+
+# ============ Firebase / Google Services ============
+google-services.json
+firebase-crashlytics-build.properties
+
+# ============ Flutter (如果混合开发) ============
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# ============ 其他构建工具 ============
+*.hprof
+*.jfr
+
+# ============ 项目文档的临时文件 ============
+docs/*.pdf
+docs/*.docx
+docs/.temp/
+
+# ============ 备份文件 ============
+*.backup
+*.bck
