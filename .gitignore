@@ -14,7 +14,7 @@ cmake-build-*
 *.dex
 *.class
 *.log
-MNN_Repo/
+MNN_Repo/build_android_arm64/
 !.gitignore
 *.lock
 *.properties
