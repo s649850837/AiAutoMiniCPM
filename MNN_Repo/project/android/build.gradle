@@ -1,0 +1,60 @@
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.2.0'
+    }
+}
+
+repositories {
+    mavenLocal()
+    google()
+    mavenCentral()
+}
+
+apply plugin: 'com.android.library'
+
+
+android {
+    namespace 'com.alibaba.android.mnn'
+    compileSdkVersion 28
+
+    defaultConfig {
+        minSdkVersion 14
+        targetSdkVersion 28
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        versionCode 1
+        versionName version
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_ARM_NEON=TRUE", "-DANDROID_PLATFORM=android-21", "-DMNN_OPENCL=true", "-DANDROID_STL=c++_shared",
+                          "-DMNN_LOW_MEMORY=true",
+                          "-DMNN_CPU_WEIGHT_DEQUANT_GEMM=true", 
+                          "-DMNN_BUILD_LLM=true", 
+                          "-DMNN_SUPPORT_TRANSFORMER_FUSE=true", 
+                          "-DMNN_ARM82=true", 
+                          "-DMNN_USE_LOGCAT=true", 
+                          "-DLLM_SUPPORT_VISION=true",
+                          "-DMNN_BUILD_OPENCV=true",
+                          "-DMNN_IMGCODECS=true",
+                          "-DLLM_SUPPORT_AUDIO=true",
+                          "-DMNN_BUILD_AUDIO=true",
+                          "-DMNN_BUILD_DIFFUSION=ON",
+                          "-DMNN_SEP_BUILD=OFF"
+                abiFilters 'armeabi-v7a', 'arm64-v8a'
+            }
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path "../../CMakeLists.txt"
+        }
+    }
+}
+
+apply from: "nativepub.gradle"
+
+
