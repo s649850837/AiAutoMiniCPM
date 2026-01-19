@@ -50,6 +50,21 @@ android {
             version = "3.22.1"
         }
     }
+
+    kapt {
+        correctErrorTypes = true
+        javacOptions {
+            // 增加错误输出上限，防止关键错误被截断
+            option("-Xmaxerrs", 500)
+        }
+    }
+
+    androidResources {
+        noCompress += "mnn"
+        noCompress += "onnx"
+        noCompress += "bin"
+        noCompress += "weight"
+    }
 }
 
 dependencies {
@@ -73,6 +88,10 @@ dependencies {
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
     kapt("androidx.room:room-compiler:$roomVersion")
+
+    // Sherpa-ONNX for offline speech recognition (v1.12.23)
+    // AAR 已包含 libonnxruntime.so，无需额外依赖
+    implementation(files("libs/sherpa-onnx-1.12.23.aar"))
 
     // Testing
     testImplementation("junit:junit:4.13.2")

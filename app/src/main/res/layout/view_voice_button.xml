@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp"
+    app:strokeWidth="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:gravity="center">
+
+        <!-- 音量波形视图 -->
+        <FrameLayout
+            android:id="@+id/waveformContainer"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone">
+
+            <View
+                android:id="@+id/waveformView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@android:color/transparent" />
+
+        </FrameLayout>
+
+        <!-- 识别文本显示 -->
+        <TextView
+            android:id="@+id/tvRecognizedText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:gravity="center"
+            android:minHeight="40dp"
+            android:text=""
+            android:textColor="?android:textColorPrimary"
+            android:textSize="16sp"
+            android:visibility="gone" />
+
+        <!-- 状态文本 -->
+        <TextView
+            android:id="@+id/tvVoiceStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="按住说话"
+            android:textColor="?android:textColorSecondary"
+            android:textSize="14sp" />
+
+        <!-- 录音按钮 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnVoiceInput"
+            style="@style/Widget.Material3.Button.Icon"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:insetLeft="0dp"
+            android:insetTop="0dp"
+            android:insetRight="0dp"
+            android:insetBottom="0dp"
+            app:cornerRadius="32dp"
+            app:icon="@android:drawable/ic_btn_speak_now"
+            app:iconGravity="textStart"
+            app:iconPadding="0dp"
+            app:iconSize="32dp" />
+
+        <!-- 录音时长 -->
+        <TextView
+            android:id="@+id/tvRecordingTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="00:00"
+            android:textColor="?android:textColorSecondary"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

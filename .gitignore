@@ -23,6 +23,7 @@ build/
 .idea/jarRepositories.xml
 .idea/misc.xml
 .idea/vcs.xml
+.claude/
 
 # Android Studio 3.x 生成的文件
 .idea/codeStyles/
