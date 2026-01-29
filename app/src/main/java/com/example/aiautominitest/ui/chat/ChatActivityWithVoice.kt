@@ -6,10 +6,12 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.Settings
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -21,7 +23,7 @@ import com.example.aiautominitest.App
 import com.example.aiautominitest.asr.AsrResult
 import com.example.aiautominitest.asr.SherpaOnnxAsrEngine
 import com.example.aiautominitest.databinding.ActivityChatBinding
-
+import com.example.aiautominitest.R
 import com.example.aiautominitest.ui.voice.VoiceInputView
 import android.util.Log
 import com.example.aiautominitest.utils.AssetUtils
@@ -48,6 +50,7 @@ class ChatActivityWithVoice : AppCompatActivity() {
     private var isAsrReady = false
 
     companion object {
+        private const val TAG = "ChatActivityWithVoice"
         private const val REQUEST_STORAGE_PERMISSION = 100
         private const val REQUEST_AUDIO_PERMISSION = 101
     }
@@ -59,11 +62,7 @@ class ChatActivityWithVoice : AppCompatActivity() {
 
         // Initialize ViewModel
         val container = (application as App).container
-        viewModel = ChatViewModel(
-            container.chatEngine,
-            container.chatRepository,
-            container.modelRepository
-        )
+        viewModel = container.createChatViewModel()
 
         setupRecyclerView()
         setupInputArea()
@@ -157,59 +156,58 @@ class ChatActivityWithVoice : AppCompatActivity() {
 
     /**
      * 准备模型文件
+     * ASR模型从assets复制，MiniCPM模型通过ViewModel加载
      */
     private fun prepareModels() {
-        lifecycleScope.launch(Dispatchers.Main) {
-            Toast.makeText(this@ChatActivityWithVoice, "正在准备语音模型...", Toast.LENGTH_SHORT).show()
-        }
-
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                // 列出 assets 根目录内容，帮助调试
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@ChatActivityWithVoice, "正在准备语音模型...", Toast.LENGTH_SHORT).show()
+                }
+                
+                // 列出assets根目录内容，帮助调试
                 val assets = assets.list("") ?: emptyArray()
-                Log.i("ChatActivity", "Assets root: ${assets.joinToString(", ")}")
-
-                // 尝试从 assets 拷贝模型
-                // 优先尝试 sherpa-onnx-models，如果失败尝试 sherpa-model
-                // 尝试从 assets 拷贝模型
-                // 优先尝试 sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20-mobile
-                var assetPath = "sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20-mobile"
-                var destPath = AssetUtils.copyAssetFolder(this@ChatActivityWithVoice, assetPath)
-
-                if (destPath == null) {
-                    Log.w("ChatActivity", "New model not found, trying sherpa-onnx-models")
-                    assetPath = "sherpa-onnx-models"
-                    destPath = AssetUtils.copyAssetFolder(this@ChatActivityWithVoice, assetPath)
+                Log.i(TAG, "Assets root: ${assets.joinToString(", ")}")
+                
+                // ASR模型从assets复制（小文件约200MB）
+                var asrAssetPath = "sherpa-onnx-streaming-zipformer-bilingual-zh-en-2023-02-20-mobile"
+                var asrDestPath = AssetUtils.copyAssetFolder(this@ChatActivityWithVoice, asrAssetPath)
+                
+                if (asrDestPath == null) {
+                    Log.w(TAG, "Primary ASR model not found, trying fallback")
+                    asrAssetPath = "sherpa-onnx-models"
+                    asrDestPath = AssetUtils.copyAssetFolder(this@ChatActivityWithVoice, asrAssetPath)
                 }
                 
                 withContext(Dispatchers.Main) {
-                    if (destPath != null) {
-                        Log.i("ChatActivity", "Models copied to $destPath")
-                        // 模型拷贝成功，尝试智能探测模型路径
-                        val asrPath = findAsrModelPath(destPath)
+                    if (asrDestPath != null) {
+                        Log.i(TAG, "ASR models copied to $asrDestPath")
+                        // 智能探测ASR模型路径
+                        val asrPath = findAsrModelPath(asrDestPath)
                         
-                        // 初始化 ASR
                         if (asrPath != null) {
                             initializeAsrEngine(asrPath)
                         } else {
-                            // Fallback to strict structure assuming /zh
-                            Log.w("ChatActivity", "ASR model auto-detection failed, trying default structure")
-                            initializeAsrEngine("$destPath/zh")
+                            Log.w(TAG, "ASR model auto-detection failed, trying default structure")
+                            initializeAsrEngine("$asrDestPath/zh")
                         }
-
-
                     } else {
-                        // 拷贝失败
-                        Log.e("ChatActivity", "Failed to copy assets. Available assets: ${assets.joinToString(", ")}")
+                        Log.e(TAG, "Failed to copy ASR assets. Available: ${assets.joinToString(", ")}")
                         Toast.makeText(
                             this@ChatActivityWithVoice,
-                            "模型文件拷贝失败。请确认 assets 目录下存在 sherpa-onnx-models 或 sherpa-model",
+                            "ASR模型准备失败，请检查assets目录",
                             Toast.LENGTH_LONG
                         ).show()
                     }
                 }
+                
+                // MiniCPM模型初始化委托给ViewModel
+                // ViewModel会从/sdcard/Android/data/{package}/files/MiniCPM4-0.5B-MNN加载
+                Log.i(TAG, "Initializing MiniCPM via ViewModel")
+                viewModel.checkAndInitModel()
+                
             } catch (e: Exception) {
-                Log.e("ChatActivity", "Error preparing models", e)
+                Log.e(TAG, "Error preparing models", e)
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@ChatActivityWithVoice, "模型准备出错: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
@@ -346,6 +344,11 @@ class ChatActivityWithVoice : AppCompatActivity() {
                 binding.progressModelLoading.visibility = View.VISIBLE
                 binding.btnSend.isEnabled = false
             }
+            is ChatUiState.ModelCopying -> {
+                binding.tvModelStatus.text = "模型状态: 复制中 (${state.progress}%) - ${state.currentFile}"
+                binding.progressModelLoading.visibility = View.VISIBLE
+                binding.btnSend.isEnabled = false
+            }
             is ChatUiState.ModelReady -> {
                 binding.tvModelStatus.text = "模型状态: 就绪 ✓"
                 binding.progressModelLoading.visibility = View.GONE
@@ -429,8 +432,15 @@ class ChatActivityWithVoice : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val permissions = mutableListOf<String>()
 
-            // Storage permissions
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            // Android 11+ (SDK 30+) 需要特殊的所有文件访问权限
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                if (!Environment.isExternalStorageManager()) {
+                    // 需要MANAGE_EXTERNAL_STORAGE权限才能访问/sdcard下的文件
+                    showStoragePermissionDialog()
+                    return
+                }
+            } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                // Android 6-10: 使用传统的READ/WRITE_EXTERNAL_STORAGE
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
                     != PackageManager.PERMISSION_GRANTED
                 ) {
@@ -449,6 +459,65 @@ class ChatActivityWithVoice : AppCompatActivity() {
                     permissions.toTypedArray(),
                     REQUEST_STORAGE_PERMISSION
                 )
+            }
+        }
+    }
+
+    private fun showStoragePermissionDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("需要文件访问权限")
+            .setMessage(
+                "应用需要访问外部存储以加载MiniCPM模型文件。\n\n" +
+                "模型位置: /sdcard/MiniCPM4-0.5B-MNN\n\n" +
+                "请在下一个界面中:\n" +
+                "1. 找到「${getString(R.string.app_name)}」\n" +
+                "2. 开启「允许访问所有文件」权限"
+            )
+            .setPositiveButton("去设置") { _, _ ->
+                requestManageExternalStorage()
+            }
+            .setNegativeButton("取消") { dialog, _ ->
+                dialog.dismiss()
+                Toast.makeText(
+                    this,
+                    "无存储权限，无法加载模型文件",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    private fun requestManageExternalStorage() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                intent.data = Uri.parse("package:$packageName")
+                startActivityForResult(intent, REQUEST_STORAGE_PERMISSION)
+            } catch (e: Exception) {
+                // 如果无法打开应用专属设置，打开通用设置
+                val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                startActivityForResult(intent, REQUEST_STORAGE_PERMISSION)
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        
+        if (requestCode == REQUEST_STORAGE_PERMISSION) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                if (Environment.isExternalStorageManager()) {
+                    Toast.makeText(this, "存储权限已授予，正在加载模型...", Toast.LENGTH_SHORT).show()
+                    // 权限已授予，重新检查并初始化模型
+                    viewModel.checkAndInitModel()
+                } else {
+                    Toast.makeText(
+                        this,
+                        "未授予存储权限，模型文件将无法加载",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
         }
     }

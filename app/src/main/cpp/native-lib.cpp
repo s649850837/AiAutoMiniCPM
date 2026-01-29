@@ -28,22 +28,60 @@ public:
 
 protected:
   std::streamsize xsputn(const char *s, std::streamsize n) override {
-    // Create a null-terminated string for JNI
-    std::string str(s, n);
-    cb_(str.c_str());
+    buffer_.append(s, n);
+    processBuffer();
     return n;
   }
+
   int overflow(int c) override {
     if (c != EOF) {
-      char ch = static_cast<char>(c);
-      char str[2] = {ch, '\0'};
-      cb_(str);
+      buffer_.push_back(static_cast<char>(c));
+      processBuffer();
     }
     return c;
   }
 
 private:
   std::function<void(const char *)> cb_;
+  std::string buffer_;
+
+  void processBuffer() {
+    size_t processed = 0;
+    size_t len = buffer_.length();
+
+    while (processed < len) {
+      unsigned char c = static_cast<unsigned char>(buffer_[processed]);
+      int seqLen = 0;
+
+      if ((c & 0x80) == 0) {
+        seqLen = 1; // ASCII
+      } else if ((c & 0xE0) == 0xC0) {
+        seqLen = 2; // 2-byte sequence
+      } else if ((c & 0xF0) == 0xE0) {
+        seqLen = 3; // 3-byte sequence
+      } else if ((c & 0xF8) == 0xF0) {
+        seqLen = 4; // 4-byte sequence
+      } else {
+        // Invalid start byte (e.g., continuation byte 0x80-0xBF without start)
+        // Or invalid UTF-8. Treat as 1 byte to discard or pass through (likely
+        // garbage). NewStringUTF might still complain, but we can't buffer it
+        // forever.
+        seqLen = 1;
+      }
+
+      if (processed + seqLen > len) {
+        // Incomplete sequence, wait for more data
+        break;
+      }
+      processed += seqLen;
+    }
+
+    if (processed > 0) {
+      std::string validChunk = buffer_.substr(0, processed);
+      cb_(validChunk.c_str());
+      buffer_.erase(0, processed);
+    }
+  }
 };
 
 extern "C" JNIEXPORT jboolean JNICALL

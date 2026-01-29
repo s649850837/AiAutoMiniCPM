@@ -30,4 +30,13 @@ class AppContainer(private val context: Context) {
     val chatEngine: IChatEngine by lazy {
         NativeChatEngine()
     }
+    
+    fun createChatViewModel(): com.example.aiautominitest.ui.chat.ChatViewModel {
+        return com.example.aiautominitest.ui.chat.ChatViewModel(
+            context,
+            chatEngine,
+            chatRepository,
+            modelRepository
+        )
+    }
 }

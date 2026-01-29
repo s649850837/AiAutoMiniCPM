@@ -20,3 +20,8 @@ MNN_Repo/build_android_arm64/
 *.properties
 !gradle-wrapper.properties
 !local.properties
+
+# MiniCPM Model Files (2.7GB - too large for git)
+/MiniCPM-V-4-MNN/
+*.weight
+embeddings_bf16.bin
